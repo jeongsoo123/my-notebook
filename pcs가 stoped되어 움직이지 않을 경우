@@ -1,0 +1,7 @@
+# pcs constraint list
+# pcs resource clear ovn-dbs-bundle
+# pcs constraint list
+# pcs status
+# pcs constraint list
+# pcs resource clear ip-10.91.214.223
+# pcs constraint list
