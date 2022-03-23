@@ -1,0 +1,71 @@
+[ RACK FAILURE DOMAIN 설정 방법 ]
+
+# ceph osd tree
+ID  CLASS  WEIGHT   TYPE NAME             STATUS  REWEIGHT  PRI-AFF
+-1         0.58557  root default
+-5         0.14639      host kewp-osd-01
+ 0    hdd  0.04880          osd.0             up   1.00000  1.00000
+ 3    hdd  0.04880          osd.3             up   1.00000  1.00000
+ 6    hdd  0.04880          osd.6             up   1.00000  1.00000
+-3         0.14639      host kewp-osd-02
+ 1    hdd  0.04880          osd.1             up   1.00000  1.00000
+ 4    hdd  0.04880          osd.4             up   1.00000  1.00000
+ 7    hdd  0.04880          osd.7             up   1.00000  1.00000
+-7         0.14639      host kewp-osd-03
+ 2    hdd  0.04880          osd.2             up   1.00000  1.00000
+ 5    hdd  0.04880          osd.5             up   1.00000  1.00000
+ 8    hdd  0.04880          osd.8             up   1.00000  1.00000
+-9         0.14639      host kewp-osd-04
+ 9    hdd  0.04880          osd.9             up   1.00000  1.00000
+10    hdd  0.04880          osd.10            up   1.00000  1.00000
+11    hdd  0.04880          osd.11            up   1.00000  1.00000
+#
+
+# ceph osd crush add-bucket R17-1 rack
+# ceph osd crush add-bucket R17-2 rack
+# ceph osd crush move kewp-osd-01 rack=R17-1
+# ceph osd crush move kewp-osd-02 rack=R17-1
+# ceph osd crush move kewp-osd-03 rack=R17-2
+# ceph osd crush move kewp-osd-04 rack=R17-2
+# ceph osd crush move R17-1 root=default
+# ceph osd crush move R17-2 root=default
+
+# ceph osd tree
+ID   CLASS  WEIGHT   TYPE NAME                 STATUS  REWEIGHT  PRI-AFF
+ -1         0.58557  root default
+-12         0.29279      rack R17-1
+ -5         0.14639          host kewp-osd-01
+  0    hdd  0.04880              osd.0             up   1.00000  1.00000
+  3    hdd  0.04880              osd.3             up   1.00000  1.00000
+  6    hdd  0.04880              osd.6             up   1.00000  1.00000
+ -3         0.14639          host kewp-osd-02
+  1    hdd  0.04880              osd.1             up   1.00000  1.00000
+  4    hdd  0.04880              osd.4             up   1.00000  1.00000
+  7    hdd  0.04880              osd.7             up   1.00000  1.00000
+-13         0.29279      rack R17-2
+ -7         0.14639          host kewp-osd-03
+  2    hdd  0.04880              osd.2             up   1.00000  1.00000
+  5    hdd  0.04880              osd.5             up   1.00000  1.00000
+  8    hdd  0.04880              osd.8             up   1.00000  1.00000
+ -9         0.14639          host kewp-osd-04
+  9    hdd  0.04880              osd.9             up   1.00000  1.00000
+ 10    hdd  0.04880              osd.10            up   1.00000  1.00000
+ 11    hdd  0.04880              osd.11            up   1.00000  1.00000
+#
+# ceph -s
+  cluster:
+    id:     00900458-a07a-11ec-b95d-525400c49fff
+    health: HEALTH_OK
+
+  services:
+    mon: 3 daemons, quorum kewp-osd-01.kewp.kr,kewp-osd-02,kewp-osd-03 (age 3d)
+    mgr: kewp-osd-02.rtxvfv(active, since 3d), standbys: kewp-osd-03.gkmslt, kewp-osd-01.kewp.kr.gbucji
+    osd: 12 osds: 12 up (since 3d), 12 in (since 13d)
+
+  data:
+    pools:   4 pools, 49 pgs
+    objects: 0 objects, 0 B
+    usage:   104 MiB used, 600 GiB / 600 GiB avail
+    pgs:     49 active+clean
+
+[root@kewp-osd-01 ~]# 
