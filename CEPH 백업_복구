@@ -1,0 +1,61 @@
+[ 백업 작업 순서 ]
+1. 백업 받을 볼륨 확인
+2. 백업 대상 볼륨 sanp
+3. snap 확인
+4. snap 볼륨 백업
+   - 백업시 최초는 FULL 백업
+   - 이후는 증분 백업
+5. 백업 파일 확인
+
+[ 복구 작업 순서 ]
+1. 복구할 볼륨 확인
+2. 기존 볼륨 삭제(삭제전 umount, unmap, snap 상태 등 확인, 만일 snap이 있을시 삭제 : rbd rm)
+3. Full 백업된 파일로 우선 복구
+4. 필요 복구 시점의 증분 백업 파일로 복구
+
+[ 실 작업 명령 ]
+# ceph osd pool ls
+# rbd -p [pool name] ls
+# rbd snap create [pool name]/[volume name]@[snap name]
+# rbd export [pool name]/[volume name]@[snap name] [full backup file name]
+(일정 시간 후에 다시 snap 후)
+# rbd snap create [pool name]/[volume name]@[snap name]
+# rbd export-diff [pool name]/[volume name]@[snap name] [full backup file name]_diff
+============
+# rbd -p [pool name] ls
+# rbd rm [pool name]/[volume name] < snap이 있을 시 snap도 삭제 >
+# rbd import [full backup file name] [pool name]/[volume name]
+(full 백업 복구 후 추가 증분 백업본으로 이후 데이터 복구)
+# rbd import-diff [full backup file name]_diff [pool name]/[volume name]
+
+(사용 예 History)
+  184  rbd -p volumes ls
+  185  rbd snap volumes/volume-db3bc559-f29b-4d69-9430-4b0d2d07991f_full@volume-db3bc559-f29b-4d69-9430-4b0d2d07991f_full_snap
+  186  rbd snap create volumes/volume-db3bc559-f29b-4d69-9430-4b0d2d07991f_full@volume-db3bc559-f29b-4d69-9430-4b0d2d07991f_full_snap
+  187  rbd snap ls volumes/volume-db3bc559-f29b-4d69-9430-4b0d2d07991f_full
+  188  rbd export volumes/volume-db3bc559-f29b-4d69-9430-4b0d2d07991f_full@volume-db3bc559-f29b-4d69-9430-4b0d2d07991f_full_snap volume-db3bc559-f29b-4d69-9430-4b0d2d07991f_full_snap.full.img
+  189  ll
+  190  rbd snap rm volumes/volume-db3bc559-f29b-4d69-9430-4b0d2d07991f_full@volume-db3bc559-f29b-4d69-9430-4b0d2d07991f_full_snap
+  191  rbd snap ls volumes/volume-db3bc559-f29b-4d69-9430-4b0d2d07991f_full
+  192  rbd snap create volumes/volume-db3bc559-f29b-4d69-9430-4b0d2d07991f_full@volume-db3bc559-f29b-4d69-9430-4b0d2d07991f_full_snap_01
+  193  rbd export-diff volumes/volume-db3bc559-f29b-4d69-9430-4b0d2d07991f_full@volume-db3bc559-f29b-4d69-9430-4b0d2d07991f_full_snap_01 volume-db3bc559-f29b-4d69-9430-4b0d2d07991f_full_snap_01.img
+  194  ll
+  195  rbd import volume-db3bc559-f29b-4d69-9430-4b0d2d07991f_full_snap.full.img volumes/volume-db3bc559-f29b-4d69-9430-4b0d2d07991f_full_snap.full.img
+  196  rbd -p volumes ls
+  197  rbd map volumes/volume-db3bc559-f29b-4d69-9430-4b0d2d07991f_full_snap.full.img
+  198  mount /dev/rbd0 /mnt
+  199  cd /mnt
+  200  ll
+  201  tail message-file
+  202  cd
+  203  umount /mnt
+  204  rbd unmap volumes/volume-db3bc559-f29b-4d69-9430-4b0d2d07991f_full_snap.full.img
+  205  ll
+  206  cd /etc/ceph
+  207  ll
+  208  rbd import-diff volume-db3bc559-f29b-4d69-9430-4b0d2d07991f_full_snap_01.img volumes/volume-db3bc559-f29b-4d69-9430-4b0d2d07991f_full_snap.full.img
+  209  rbd map volumes/volume-db3bc559-f29b-4d69-9430-4b0d2d07991f_full_snap.full.img
+  210  mount /dev/rbd0 /mnt
+  211  cd /mnt
+  212  tail message-file
+  213  vi message-file
